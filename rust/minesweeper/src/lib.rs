@@ -3,26 +3,25 @@ pub fn annotate(minefield: &[&str]) -> Vec<String> {
         (0..minefield.len()).map(|_| String::from("")).collect()
     } else {
         let (n, m) = (minefield.len() as i32, minefield[0].len() as i32);
+        let is_mine = |x, y| { minefield[x as usize].chars().nth(y as usize).unwrap() == '*' };
         let calc = |cx, cy| {
-            if minefield[cx as usize].chars().nth(cy as usize).unwrap() == '*' {
+            if is_mine(cx, cy) {
                 return '*';
             }
-            let dx = [-1, -1, -1, 0, 0, 1, 1, 1];
-            let dy = [-1, 0, 1, -1, 1, -1, 0, 1];
-            let mut num_mines = b'0';
-            for i in 0..8 {
-                let nx = dx[i] + cx;
-                let ny = dy[i] + cy;
-                if nx >= 0
-                    && nx < n as i32
-                    && ny >= 0
-                    && ny < m as i32
-                    && minefield[nx as usize].chars().nth(ny as usize).unwrap() == '*'
-                {
-                    num_mines += 1;
-                }
-            }
-            return if num_mines == b'0' { ' ' } else { num_mines as char };
+            let xs = std::cmp::max(0, cx - 1);
+            let xe = std::cmp::min(n - 1, cx + 1);
+            let ys = std::cmp::max(0, cy - 1);
+            let ye = std::cmp::min(m - 1, cy + 1);
+            let c = (xs..xe + 1)
+                .flat_map(|x| (ys..ye + 1).map(move |y| (x, y)))
+                .filter(|(x, y)| (*x != cx || *y != cy))
+                .filter(|(x, y)| is_mine(*x, *y))
+                .count();
+            return if c == 0 {
+                ' '
+            } else {
+                (c as u8 + b'0') as char
+            };
         };
         (0..n)
             .map(|cx| (0..m).map(|cy| calc(cx, cy)).collect())
